@@ -7,76 +7,87 @@ export const RegistrationForm: React.FC = () => {
     const [fullName, setFullName] = useState<string>('');
     const [email, setEmail] = useState<string>('');
     const [password, setPassword] = useState<string>('');
-    const [error, setError] = useState<string>('');  // Сообщение об ошибке
-    const [success, setSuccess] = useState<string>('');  // Сообщение об успехе
+    const [error, setError] = useState<string>('');  
+    const [success, setSuccess] = useState<string>('');  
     const navigate = useNavigate();
 
     /**
-     * Проверяет корректность введенных данных формы.
+     * Функция для валидации введённых данных формы регистрации.
      * 
-     * @returns {boolean} Возвращает true, если все поля валидны, иначе false.
-    */
+     * Эта функция проверяет корректность значений, введённых пользователем в поля
+     * формы (логин, email и пароль). В случае возникновения ошибок, соответствующее 
+     * сообщение об ошибке устанавливается в состояние `error`.
+     * 
+     * Если все проверки пройдены успешно, функция сбрасывает сообщения об ошибках
+     * и возвращает `true`, указывая, что форма корректна.
+     * 
+     * @returns {boolean} - Возвращает `true`, если все поля формы валидны.
+     *                      Возвращает `false`, если есть ошибки валидации.
+     */
     const validateForm = (): boolean => {
-        // Проверка логина: только латинские буквы и цифры, первый символ – буква, длина от 4 до 20 символов
         const usernameRegex = /^[a-zA-Z][a-zA-Z0-9]{3,19}$/;
         if (!usernameRegex.test(username)) {
             setError('Логин должен начинаться с буквы, содержать только латинские буквы и цифры, и быть длиной от 4 до 20 символов.');
             return false;
-        }
-
-        // Проверка email
+        }        
         const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
         if (!emailRegex.test(email)) {
             setError('Неверный формат email.');
             return false;
-        }
-
-        // Проверка пароля: не менее 6 символов, хотя бы одна заглавная буква, одна цифра и один специальный символ
+        }        
         const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{6,}$/;
         if (!passwordRegex.test(password)) {
             setError('Пароль должен содержать минимум 6 символов, одну заглавную букву, одну цифру и один специальный символ.');
             return false;
         }
-
-        setError(''); // Сбрасываем ошибки, если все проверки пройдены
+        setError(''); 
         return true;
     };
 
     /**
-     * Обрабатывает отправку формы регистрации.
+     * Обработчик события отправки формы регистрации.
      * 
-     * @param {React.FormEvent<HTMLFormElement>} e - Событие отправки формы.
-     * @returns {void}
+     * Эта асинхронная функция выполняется при отправке формы. 
+     * Она предотвращает стандартное поведение отправки формы и: 
+     * 1. Проверяет корректность введенных данных с помощью функции `validateForm()`.
+     *    Если данные некорректные, функция завершается без дальнейших действий.     * 
+     * 2. Если валидация прошла успешно, функция отправляет POST-запрос на сервер 
+     *    по адресу 'http://localhost:5000/api/register' с введенными данными 
+     *    (логин, полное имя, email и пароль) в формате JSON.     * 
+     * 3. Если ответ от сервера не успешен (код ответа не в диапазоне 200-299), 
+     *    функция обрабатывает это как ошибку, пытаясь извлечь сообщение об ошибке
+     *    из ответа сервера и выбрасывает его.     * 
+     * 4. При успешной регистрации устанавливается сообщение об успешной регистрации 
+     *    в состоянии `success`, а сообщение об ошибке сбрасывается.
+     *    После этого происходит автоматическое перенаправление пользователя 
+     *    на страницу входа ('/signin') через 2 секунды.     * 
+     * 5. В случае возникновения ошибки (например, проблем с сетью или с ответом сервера),
+     *    функция обрабатывает её и устанавливает сообщение об ошибке в состояние `error`.
      * 
-     * Функция предотвращает стандартное поведение формы, проверяет валидность данных с помощью
-     * функции validateForm, и если данные валидны, отправляет запрос на сервер для
-     * регистрации пользователя. В случае успеха отображает сообщение об успешной регистрации
-     * и перенаправляет пользователя на страницу входа. В случае ошибки отображает сообщение об ошибке.
-    */
+     * @param {React.FormEvent<HTMLFormElement>} e - Объект события, 
+     * представляющий событие отправки формы.
+     */
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-
         if (!validateForm()) {
-            return; // Прерываем выполнение, если проверка не пройдена
+            return;
         }
-
         try {
-            const response = await fetch('/api/register', {  // WIP: сервер еще не готов
+            const response = await fetch('http://localhost:5000/api/register', {  
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({ username, fullName, email, password }),
             });
-
             if (!response.ok) {
                 const errorData = await response.json();
                 throw new Error(errorData.message || 'Ошибка во время регистрации');
             }
-
-            setSuccess('Регистрация прошла успешно!'); // Успешное сообщение
+            setSuccess('Регистрация прошла успешно!');
+            setError(''); // Сброс ошибки при успешной регистрации
             setTimeout(() => {
-                navigate('/signin'); // Перенаправляем на страницу "Вход"
+                navigate('/signin'); 
             }, 2000);
         } catch (err: unknown) {
             console.error(err);
@@ -93,7 +104,8 @@ export const RegistrationForm: React.FC = () => {
             <h2>Введите данные для регистрации</h2>
             <form onSubmit={handleSubmit}>
                 <div className="input-signup">
-                    <label>
+
+                <label>
                         Логин:
                         <input
                             type="text"
@@ -135,9 +147,9 @@ export const RegistrationForm: React.FC = () => {
                             required
                         />
                     </label>
-                </div>                
-                {error && <div className="error-message">{error}</div>}
-                {success && <div className="success-message">{success}</div>}
+                </div>
+                {error && <div style={{ color: 'red' }}>{error}</div>}
+                {success && <div style={{ color: 'green' }}>{success}</div>}
                 <button className="button-signup" type="submit">Зарегистрироваться</button>
             </form>
         </div>

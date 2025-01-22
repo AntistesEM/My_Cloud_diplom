@@ -4,10 +4,10 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 export const LoginForm: React.FC = () => {
-    const [username, setUsername] = useState<string>('');
-    const [password, setPassword] = useState<string>('');
-    const [error, setError] = useState<string>('');
-    const navigate = useNavigate();
+    const [username, setUsername] = useState<string>('');  // Состояние для хранения имени пользователя, вводимого в форму
+    const [password, setPassword] = useState<string>('');  // Состояние для хранения пароля, вводимого в форму
+    const [error, setError] = useState<string>('');  // Состояние для хранения сообщения об ошибке в случае неудачной аутентификации
+    const navigate = useNavigate();  // Хук для навигации между страницами приложения в зависимости от роли пользователя
 
     /**
      * handleSubmit - Обработчик отправки формы для входа пользователя.
@@ -21,17 +21,21 @@ export const LoginForm: React.FC = () => {
      * 2. Отправляет POST-запрос на '/api/login' с данными пользователя (имя пользователя и пароль).
      * 3. Если ответ от сервера не успешен (response.ok == false), выбрасывает ошибку с сообщением 
      *    'Некорректный логин или пароль'.
-     * 4. Если аутентификация успешна, извлекает роль пользователя из ответа сервера:
-     *    - Если роль 'admin', перенаправляет на административную панель ('/admin-panel').
-     *    - Если роль обычного пользователя, перенаправляет на панель файлового хранилища ('/file-storage').
+     * 4. Если аутентификация успешна, извлекает токен и роль пользователя из ответа сервера:
+     *    - Если роль 'admin', перенаправляет на административную панель ('/adminpanel').
+     *    - Если роль обычного пользователя, перенаправляет на панель файлового хранилища ('/storage').
      * 5. Обрабатывает любые ошибки, которые могут возникнуть во время запроса:
      *    - Устанавливает сообщение об ошибке с помощью setError().
-    */
+     * 
+     * Ожидаемые данные от сервера: 
+     * - Токен аутентификации (token)
+     * - Роль пользователя (role) (значения могут быть 'admin' или 'user')
+     */
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
 
         try {
-            const response = await fetch('/api/login', {  // WIP: сервер еще не готов
+            const response = await fetch('http://localhost:5000/api/login', {  // WIP: сервер еще не готов
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -45,12 +49,17 @@ export const LoginForm: React.FC = () => {
 
             const data = await response.json();
 
-            const { role } = data; // !!! Cервер должен возвращать объект пользователя с полем role
+            const { token, role } = data; // Достаем токен и роль
+
+            // Сохранение токена и роли в localStorage
+            localStorage.setItem('token', token);
+            localStorage.setItem('role', role); 
             
+            // Переход на соответствующую страницу в зависимости от роли
             if (role === 'admin') {
-                navigate('/admin-panel');  // WIP: административная панель еще в разработке
+                navigate('/adminpanel');  // WIP: административная панель еще в разработке
             } else {
-                navigate('/file-storage');  // WIP: панель для обычных пользователей еще в разработке
+                navigate('/storage');  // WIP: панель для обычных пользователей еще в разработке
             }
         } catch (err: unknown) {
             console.error(err);
