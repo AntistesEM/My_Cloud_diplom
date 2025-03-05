@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import { useEffect, useState } from 'react';
 import { LoginForm } from './components/LoginForm';
 import { RegistrationForm } from './components/RegistrationForm';
-// import { AdminPanel } from './components/AdminPanel';  // WIP: Панель администратора в разработке
+import { AdminPanel } from './components/AdminPanel';
 import { FileStorage } from './components/FileStorage';
 import { Navbar } from './components/Navbar';
 import { ProtectedRoute } from './components/ProtectedRoute';
@@ -20,33 +20,47 @@ import { ProtectedRoute } from './components/ProtectedRoute';
  *   - Главная ("/"): отображает приветственное сообщение и краткое описание функционала приложения.
  *   - Вход ("/signin"): отображает форму для входа пользователя.
  *   - Регистрация ("/signup"): отображает форму для регистрации нового пользователя.
- *   - Файловое хранилище ("/storage"): в разработке.
- *   - Панель администратора ("/adminpanel"): в разработке.
+ *   - Файловое хранилище ("/storage"): защищенный маршрут для доступа к файлам пользователя.
+ *   - Панель администратора ("/admin"): защищенный маршрут для доступа к административной панели.
  * 
  * Компонент также управляет состоянием аутентификации пользователя, используя
  * состояние `isAuthenticated`, которое обновляется при загрузке приложения и после выхода
- * пользователя из системы.
+ * пользователя из системы. Роль пользователя хранится в состоянии `role` и может 
+ * использоваться для условной отрисовки компонентов.
  * 
  * @returns {JSX.Element} - Возвращает JSX, представляющий главный интерфейс приложения с навигацией и маршрутами.
  */
 const App = () => {
     const [isAuthenticated, setIsAuthenticated] = useState<boolean>(!!localStorage.getItem('token')); // Устанавливаем статус аутентификации
+    const [role, setRole] = useState<string>(localStorage.getItem('role') || ''); // Состояние для роли
 
     // Функция выхода из системы
     const handleLogout = () => {
         localStorage.removeItem('token'); // Удаляем токен из localStorage
         localStorage.removeItem('role'); // Удаляем информацию о роли
         setIsAuthenticated(false); // Устанавливаем статус аутентификации в false
+        setRole(''); // Обновляем состояние роли
     };
-    // проверяем наличие токена при загрузке приложения
+    
+    // Обновляет состояние аутентификации и роли пользователя при изменении
+    const updateAuth = (authStatus: boolean, userRole: string) => {
+        setIsAuthenticated(authStatus); // Обновляем статус аутентификации в состоянии
+        setRole(userRole); // Устанавливаем новую роль пользователя
+    };
+
+    // проверяем наличие токена и роли при загрузке приложения (один раз при монтировании)
     useEffect(() => {
         const token = localStorage.getItem('token'); // Проверяем наличие токена
+        const storedRole = localStorage.getItem('role'); // Проверяем наличие роли
         setIsAuthenticated(!!token); // Обновляем статус аутентификации
+        if (storedRole) {
+            setRole(storedRole); // Устанавливаем роль
+        }
     }, []);
 
     return (
         <Router>
-            <Navbar onLogout={handleLogout} isAuthenticated={isAuthenticated} />
+            <Navbar onLogout={handleLogout} isAuthenticated={isAuthenticated} role={role} />
             <Routes>
                 <Route path="/" element={
                     <div className="wrap">
@@ -55,18 +69,18 @@ const App = () => {
                         <p>Выберите действие для продолжения</p>
                     </div>
                 } />
-                <Route path="/signin" element={<LoginForm />} />
+                <Route path="/signin" element={<LoginForm updateAuth={updateAuth} />} />
                 <Route path="/signup" element={<RegistrationForm />} />
-                <Route path="/storage" element={
+                <Route path="/storage/:userId" element={
                     <ProtectedRoute> {/* Защищенный маршрут для файлового хранилища */}
                         <FileStorage />
                     </ProtectedRoute>
                 } />
-                {/* <Route path="/admin" element={  // WIP: Панель администратора в разработке
-                    <ProtectedRoute>
+                <Route path="/admin" element={
+                    <ProtectedRoute> {/* Защищенный маршрут для файлового хранилища */}
                         <AdminPanel />
                     </ProtectedRoute>
-                } /> */}
+                } />
             </Routes>
         </Router>
     );

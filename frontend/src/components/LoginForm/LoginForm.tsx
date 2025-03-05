@@ -3,7 +3,7 @@ import "./LoginForm.css";
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-export const LoginForm: React.FC = () => {
+export const LoginForm: React.FC<{ updateAuth: (authStatus: boolean, role: string) => void }> = ({ updateAuth }) => {
     const [username, setUsername] = useState<string>('');  // Состояние для хранения имени пользователя, вводимого в форму
     const [password, setPassword] = useState<string>('');  // Состояние для хранения пароля, вводимого в форму
     const [error, setError] = useState<string>('');  // Состояние для хранения сообщения об ошибке в случае неудачной аутентификации
@@ -13,17 +13,17 @@ export const LoginForm: React.FC = () => {
      * handleSubmit - Обработчик отправки формы для входа пользователя.
      * 
      * Эта асинхронная функция выполняется при отправке формы входа. Она предотвращает 
-     * стандартное поведение формы, отправляет POST-запрос на сервер для аутентификации 
-     * пользователя и обрабатывает ответ. 
+     * стандартное поведение формы, что может привести к перезагрузке страницы, 
+     * отправляет POST-запрос на сервер для аутентификации пользователя и обрабатывает ответ. 
      * 
      * Основные шаги:
      * 1. Предотвращает стандартное поведение формы с помощью e.preventDefault().
      * 2. Отправляет POST-запрос на '/api/login' с данными пользователя (имя пользователя и пароль).
-     * 3. Если ответ от сервера не успешен (response.ok == false), выбрасывает ошибку с сообщением 
+     * 3. Если ответ от сервера не успешен (response.ok === false), выбрасывает ошибку с сообщением 
      *    'Некорректный логин или пароль'.
      * 4. Если аутентификация успешна, извлекает токен и роль пользователя из ответа сервера:
-     *    - Если роль 'admin', перенаправляет на административную панель ('/adminpanel').
-     *    - Если роль обычного пользователя, перенаправляет на панель файлового хранилища ('/storage').
+     *    - Если роль 'admin', перенаправляет на административную панель ('/admin').
+     *    - Если роль 'user', перенаправляет на панель файлового хранилища ('/storage/{userId}').
      * 5. Обрабатывает любые ошибки, которые могут возникнуть во время запроса:
      *    - Устанавливает сообщение об ошибке с помощью setError().
      * 
@@ -35,7 +35,7 @@ export const LoginForm: React.FC = () => {
         e.preventDefault();
 
         try {
-            const response = await fetch('http://localhost:5000/api/login', {  // WIP: сервер еще не готов
+            const response = await fetch('http://localhost:5000/api/login', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -49,24 +49,27 @@ export const LoginForm: React.FC = () => {
 
             const data = await response.json();
 
-            const { token, role } = data; // Достаем токен и роль
+            const { id, token, role } = data; // Достаем id, токен и роль
 
             // Сохранение токена и роли в localStorage
             localStorage.setItem('token', token);
-            localStorage.setItem('role', role); 
+            localStorage.setItem('role', role);
+            
+            // Обновляем аутентификацию
+            updateAuth(true, role); 
             
             // Переход на соответствующую страницу в зависимости от роли
             if (role === 'admin') {
-                navigate('/adminpanel');  // WIP: административная панель еще в разработке
+                navigate('/admin');
             } else {
-                navigate('/storage');  // WIP: панель для обычных пользователей еще в разработке
+                navigate(`/storage/${id}`);
             }
         } catch (err: unknown) {
             console.error(err);
             if (err instanceof Error) {
                 setError(err.message); // Устанавливаем сообщение об ошибке
             } else {
-                setError('Произошла ошибка'); // Ответ, если это не ошибка
+                setError('Произошла ошибка'); // Сообщение по умолчанию, если это не ошибка
             }
         }
     };

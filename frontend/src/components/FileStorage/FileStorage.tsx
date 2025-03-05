@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
 import './FileStorage.css';
 
 interface FileItem {
@@ -11,20 +12,21 @@ interface FileItem {
 }
 
 export const FileStorage: React.FC = () => {
+    const { userId } = useParams<{ userId: string }>(); // Получаем ID пользователя из URL
     const [files, setFiles] = useState<FileItem[]>([]);  // Состояние для хранения списка файлов
     const [error, setError] = useState<string>('');  // Cостояние для хранения сообщения об ошибках
     const [selectedFile, setSelectedFile] = useState<File | null>(null);  // Состояние для хранения выбранного файла для загрузки
     const [comment, setComment] = useState<string>('');  // Состояние для хранения комментария к загружаемому файлу
     const [isLoading, setIsLoading] = useState<boolean>(false);  // Состояние для отслеживания состояния загрузки
-
+    
     /**
-     * Эффект, который загружает файлы из API при монтировании компонента.
+     * Хук, который загружает файлы из API при монтировании компонента.
      */
     useEffect(() => {
         const fetchFiles = async () => {
             setIsLoading(true);
             try {
-                const response = await fetch('http://localhost:5000/api/storage');
+                const response = await fetch(`http://localhost:5000/api/storage/${userId}`);
                 if (!response.ok) {
                     throw new Error('Не удалось загрузить файлы');
                 }
@@ -42,22 +44,27 @@ export const FileStorage: React.FC = () => {
             }
         };
         fetchFiles();
-    }, []);
+    }, [userId]);
 
     /**
      * Обработчик загрузки файла. Загружает выбранный файл и комментарий на сервер.
      * 
      * При отправке формы функция проверяет наличие выбранного файла. Если файл выбран, 
      * он добавляется в объект FormData вместе с комментарием. Затем функция отправляет
-     * POST-запрос на сервер для загрузки файла. В случае успешной загрузки обновляется
-     * список файлов и сбрасываются выбранный файл и комментарий. 
+     * POST-запрос на сервер для загрузки файла. При успешной загрузке обновляется
+     * список файлов, и происходит сброс выбранного файла и комментария. 
      * Также обрабатываются ошибки, которые могут возникнуть во время загрузки.
+     *
+     * Функция также устанавливает состояние загрузки в true до завершения запроса 
+     * и устанавливает его в false в любом случае, чтобы 
+     * отразить состояние загрузки в пользовательском интерфейсе.
      * 
      * @param {React.FormEvent<HTMLFormElement>} e - Событие отправки формы.
      */
     const handleUpload = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        if (!selectedFile) return; // Если файл не выбран, прерываем выполнение функции
+        // Если файл не выбран, прерываем выполнение функции
+        if (!selectedFile) return; 
         
         // Создаем новый объект FormData и добавляем в него выбранный файл и комментарий
         const formData = new FormData();
@@ -66,13 +73,12 @@ export const FileStorage: React.FC = () => {
 
         setIsLoading(true); // Устанавливаем состояние загрузки в true
         try {
-            // Выполняем POST-запрос на сервер для загрузки файла
-            const response = await fetch('http://localhost:5000/api/storage/upload', {
+            const response = await fetch(`http://localhost:5000/api/storage/upload/${userId}`, {
                 method: 'POST',
                 body: formData,
             });
             if (!response.ok) {
-                throw new Error('Не удалось загрузить файл'); // Обработка неуспешного ответа
+                throw new Error('Не удалось загрузить файл');
             }
             const newFiles = await response.json(); // Получаем новый список файлов после загрузки
             setFiles(newFiles); // Обновляем состояние файлов
@@ -94,31 +100,31 @@ export const FileStorage: React.FC = () => {
      * Обработчик удаления файла. Удаляет файл с указанным идентификатором.
      * 
      * Функция отправляет DELETE-запрос на сервер для удаления файла с заданным 
-     * идентификатором. Если делается успешный запрос, файл удаляется из состояния 
-     * компонента. В случае возникновения ошибки при удалении, она обрабатывается 
-     * и выводится сообщение об ошибке.
+     * идентификатором. Если запрос завершен успешно, файл удаляется из состояния, 
+     * хранящего список файлов, в компоненте. В случае возникновения ошибки при 
+     * удалении, ошибка обрабатывается и выводится сообщение об ошибке пользователю.
      * 
      * @param {number} fileId - Идентификатор файла, который нужно удалить.
      */
     const handleDelete = async (fileId: number) => {
         setIsLoading(true); // Устанавливаем состояние загрузки в true
         try {
-            // Выполняем DELETE-запрос на сервер для удаления файла с указанным идентификатором
-            const response = await fetch(`http://localhost:5000/api/storage/delete/${fileId}`, {
+            const response = await fetch(`http://localhost:5000/api/storage/delete/${userId}/${fileId}`, {
                 method: 'DELETE',
             });
             
             if (!response.ok) {                
-                throw new Error('Не удалось удалить файл'); // Обработка неуспешного ответа
+                throw new Error('Не удалось удалить файл');
             }
 
             // Обновляем состояние файлов, исключая удаляемый файл
             const newFiles = files.filter(file => file.id !== fileId);
+
             setFiles(newFiles); // Устанавливаем новое состояние файлов
         } catch (err: unknown) {
             console.error(err); // Логируем ошибку
             if (err instanceof Error) {
-                setError(err.message); // Устанавливаем сообщение об ошибке для отображения
+                setError(err.message); // Устанавливаем сообщение об ошибке для отображения пользователю
             } else {
                 setError('Произошла ошибка при удалении файла'); // Сообщение по умолчанию
             }
@@ -131,9 +137,10 @@ export const FileStorage: React.FC = () => {
      * Обработчик переименования файла. Переименовывает файл с указанным идентификатором.
      * 
      * Функция отправляет POST-запрос на сервер для изменения имени файла с заданным
-     * идентификатором. Если запрос успешен, состояние файла обновляется, и новое имя 
-     * устанавливается как текущее для файла. В случае ошибки во время процесса переименования,
-     * функция обрабатывает её и выводит сообщение об ошибке.
+     * идентификатором. Если запрос завершен успешно, состояние файла обновляется, 
+     * и новое имя устанавливается как текущее имя для переименованного файла. 
+     * В случае возникновения ошибки во время процесса переименования, 
+     * функция обрабатывает её и выводит сообщение об ошибке пользователю.
      * 
      * @param {number} fileId - Идентификатор файла, который нужно переименовать.
      * @param {string} newName - Новое имя для файла.
@@ -141,8 +148,7 @@ export const FileStorage: React.FC = () => {
     const handleRename = async (fileId: number, newName: string) => {
         setIsLoading(true); // Устанавливаем состояние загрузки в true
         try {
-            // Выполняем POST-запрос на сервер для переименования файла
-            const response = await fetch(`http://localhost:5000/api/storage/rename/${fileId}`, {
+            const response = await fetch(`http://localhost:5000/api/storage/rename/${userId}/${fileId}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -150,16 +156,16 @@ export const FileStorage: React.FC = () => {
                 body: JSON.stringify({ name: newName }), // Отправляем новое имя файла в теле запроса
             });
             if (!response.ok) {
-                throw new Error('Не удалось переименовать файл'); // Обработка неуспешного ответа
+                throw new Error('Не удалось переименовать файл');
             }
             const updatedFile = await response.json(); // Получаем обновленные данные файла
 
-            // Обновляем состояние файлов, заменяя старое имя на новое
+            // Обновляем состояние файлов, заменяя старое имя на новое для конкретного файла
             setFiles(files.map(file => (file.id === fileId ? updatedFile : file)));
         } catch (err: unknown) {
             console.error(err); // Логируем ошибку
             if (err instanceof Error) {
-                setError(err.message); // Устанавливаем сообщение об ошибке для отображения
+                setError(err.message); // Устанавливаем сообщение об ошибке для отображения пользователю
             } else {
                 setError('Произошла ошибка при переименовании файла'); // Сообщение по умолчанию
             }
@@ -171,16 +177,17 @@ export const FileStorage: React.FC = () => {
     /**
      * Обработчик копирования ссылки на файл. Копирует URL файла с указанным идентификатором в буфер обмена.
      * 
-     * Функция создает ссылку на файл, используя его идентификатор, и затем записывает
-     * эту ссылку в буфер обмена с помощью API clipboard. В случае успешного копирования
-     * выводится сообщение об успешном завершении. Если возникает ошибка во время копирования,
-     * ошибка логируется в консоль.
+     * Функция формирует ссылку на файл, используя его идентификатор и идентификатор пользователя, 
+     * и затем записывает эту ссылку в буфер обмена с помощью API clipboard. 
+     * В случае успешного копирования выводится сообщение об успешном завершении. 
+     * Если возникает ошибка во время копирования, она логируется в консоль.
      * 
+     * @param {string | undefined} userId - Идентификатор пользователя, связанный с файлом.
      * @param {number} fileId - Идентификатор файла, для которого нужно скопировать ссылку.
      */
-    const handleCopyLink = (fileId: number) => {
-        // Формируем ссылку на файл, используя его идентификатор
-        const fileLink = `http://localhost:5000/api/storage/file/${fileId}`;
+    const handleCopyLink = (userId: string | undefined, fileId: number) => {
+        // Формируем ссылку на файл, используя идентификатор пользователя и файл
+        const fileLink = `http://localhost:5000/api/storage/file/${userId}/${fileId}`;
         // Копируем ссылку в буфер обмена
         navigator.clipboard.writeText(fileLink)
             .then(() => alert('Ссылка скопирована!')) // Сообщение об успешном копировании
@@ -231,8 +238,8 @@ export const FileStorage: React.FC = () => {
                                         const newName = prompt('Введите новое имя файла:', file.name);
                                         if (newName) handleRename(file.id, newName);
                                     }}>Переименовать</button>
-                                    <button onClick={() => handleCopyLink(file.id)}>Копировать ссылку</button>
-                                    <a href={`http://localhost:5000/api/storage/file/${file.id}`} target="_blank" rel="noopener noreferrer">Просмотр</a>
+                                    <button onClick={() => handleCopyLink(userId, file.id)}>Копировать ссылку</button>
+                                    <a href={`http://localhost:5000/api/storage/file/${userId}/${file.id}`} target="_blank" rel="noopener noreferrer">Просмотр</a>
                                 </td>
                             </tr>
                         ))}
