@@ -1,4 +1,4 @@
-# тестовый сервер для проверки фронтенда
+# тестовый сервер для проверки фронтенда: python server.py и npm run dev
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
