@@ -4,11 +4,11 @@ import { useNavigate } from 'react-router-dom';
 
 export const RegistrationForm: React.FC = () => {
     const [username, setUsername] = useState<string>('');
-    const [fullName, setFullName] = useState<string>('');
+    const [fullname, setFullName] = useState<string>('');
     const [email, setEmail] = useState<string>('');
-    const [password, setPassword] = useState<string>('');
-    const [error, setError] = useState<string>('');  
-    const [success, setSuccess] = useState<string>('');  
+    const [password_hash, setPassword] = useState<string>('');
+    const [error, setError] = useState<string>('');
+    const [success, setSuccess] = useState<string>('');
     const navigate = useNavigate();
 
     /**
@@ -36,7 +36,7 @@ export const RegistrationForm: React.FC = () => {
             return false;
         }        
         const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{6,}$/;
-        if (!passwordRegex.test(password)) {
+        if (!passwordRegex.test(password_hash)) {
             setError('Пароль должен содержать минимум 6 символов, одну заглавную букву, одну цифру и один специальный символ.');
             return false;
         }
@@ -73,12 +73,12 @@ export const RegistrationForm: React.FC = () => {
             return;
         }
         try {
-            const response = await fetch('http://localhost:5000/api/register', {  
+            const response = await fetch('http://localhost:8000/api/users/', {  
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ username, fullName, email, password }),
+                body: JSON.stringify({ email, username, fullname, password_hash }),
             });
             if (!response.ok) {
                 const errorData = await response.json();
@@ -120,7 +120,7 @@ export const RegistrationForm: React.FC = () => {
                         Полное имя:
                         <input
                             type="text"
-                            value={fullName}
+                            value={fullname}
                             onChange={(e) => setFullName(e.target.value)}
                             required
                         />
@@ -142,7 +142,7 @@ export const RegistrationForm: React.FC = () => {
                         Пароль:
                         <input
                             type="password"
-                            value={password}
+                            value={password_hash}
                             onChange={(e) => setPassword(e.target.value)}
                             required
                         />

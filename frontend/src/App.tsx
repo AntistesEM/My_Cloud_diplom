@@ -31,12 +31,13 @@ import { ProtectedRoute } from './components/ProtectedRoute';
  * @returns {JSX.Element} - Возвращает JSX, представляющий главный интерфейс приложения с навигацией и маршрутами.
  */
 const App = () => {
-    const [isAuthenticated, setIsAuthenticated] = useState<boolean>(!!localStorage.getItem('token')); // Устанавливаем статус аутентификации
+    const [isAuthenticated, setIsAuthenticated] = useState<boolean>(!!localStorage.getItem('access_token')); // Устанавливаем статус аутентификации
     const [role, setRole] = useState<string>(localStorage.getItem('role') || ''); // Состояние для роли
 
     // Функция выхода из системы
     const handleLogout = () => {
-        localStorage.removeItem('token'); // Удаляем токен из localStorage
+        localStorage.removeItem('access_token'); // Удаляем токен из localStorage
+        localStorage.removeItem('refresh_token'); // Удаляем токен из localStorage
         localStorage.removeItem('role'); // Удаляем информацию о роли
         setIsAuthenticated(false); // Устанавливаем статус аутентификации в false
         setRole(''); // Обновляем состояние роли
@@ -50,7 +51,7 @@ const App = () => {
 
     // проверяем наличие токена и роли при загрузке приложения (один раз при монтировании)
     useEffect(() => {
-        const token = localStorage.getItem('token'); // Проверяем наличие токена
+        const token = localStorage.getItem('access_token'); // Проверяем наличие токена
         const storedRole = localStorage.getItem('role'); // Проверяем наличие роли
         setIsAuthenticated(!!token); // Обновляем статус аутентификации
         if (storedRole) {
@@ -71,7 +72,7 @@ const App = () => {
                 } />
                 <Route path="/signin" element={<LoginForm updateAuth={updateAuth} />} />
                 <Route path="/signup" element={<RegistrationForm />} />
-                <Route path="/storage/:userId" element={
+                <Route path="/storage/:id_user" element={
                     <ProtectedRoute> {/* Защищенный маршрут для файлового хранилища */}
                         <FileStorage />
                     </ProtectedRoute>

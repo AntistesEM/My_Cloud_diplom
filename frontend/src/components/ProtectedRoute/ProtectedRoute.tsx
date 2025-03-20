@@ -13,7 +13,7 @@ import { Navigate } from "react-router-dom";
  * @returns {JSX.Element} - Возвращает дочерние компоненты или выполняет перенаправление.
  */
 export const ProtectedRoute: React.FC<{ children: React.ReactNode, requireAdmin?: boolean }> = ({ children, requireAdmin }) => { 
-    const token = localStorage.getItem('token'); 
+    const token = localStorage.getItem('access_token'); 
     const role = localStorage.getItem('role');
 
     if (!token) {

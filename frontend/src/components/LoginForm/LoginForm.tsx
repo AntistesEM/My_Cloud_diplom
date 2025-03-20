@@ -1,11 +1,11 @@
 import "./LoginForm.css";
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 export const LoginForm: React.FC<{ updateAuth: (authStatus: boolean, role: string) => void }> = ({ updateAuth }) => {
     const [username, setUsername] = useState<string>('');  // Состояние для хранения имени пользователя, вводимого в форму
-    const [password, setPassword] = useState<string>('');  // Состояние для хранения пароля, вводимого в форму
+    const [password_hash, setPassword] = useState<string>('');  // Состояние для хранения пароля, вводимого в форму
     const [error, setError] = useState<string>('');  // Состояние для хранения сообщения об ошибке в случае неудачной аутентификации
     const navigate = useNavigate();  // Хук для навигации между страницами приложения в зависимости от роли пользователя
 
@@ -35,24 +35,25 @@ export const LoginForm: React.FC<{ updateAuth: (authStatus: boolean, role: strin
         e.preventDefault();
 
         try {
-            const response = await fetch('http://localhost:5000/api/login', {
+            const response = await fetch('http://localhost:8000/api/users/', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ username, password }),
+                body: JSON.stringify({ username, password_hash }),
             });
-
+            // console.log(response.json());
+            
             if (!response.ok) {
                 throw new Error('Некорректный логин или пароль');
             }
 
             const data = await response.json();
-
-            const { id, token, role } = data; // Достаем id, токен и роль
+            const { access, refresh, role, id_user } = data; // Достаем id, токен и роль
 
             // Сохранение токена и роли в localStorage
-            localStorage.setItem('token', token);
+            localStorage.setItem('access_token', access);
+            localStorage.setItem('refresh_token', refresh);
             localStorage.setItem('role', role);
             
             // Обновляем аутентификацию
@@ -62,7 +63,7 @@ export const LoginForm: React.FC<{ updateAuth: (authStatus: boolean, role: strin
             if (role === 'admin') {
                 navigate('/admin');
             } else {
-                navigate(`/storage/${id}`);
+                navigate(`/storage/${id_user}`);
             }
         } catch (err: unknown) {
             console.error(err);
@@ -94,7 +95,7 @@ export const LoginForm: React.FC<{ updateAuth: (authStatus: boolean, role: strin
                         Пароль:
                         <input
                             type="password"
-                            value={password}
+                            value={password_hash}
                             onChange={(e) => setPassword(e.target.value)}
                             required
                         />
