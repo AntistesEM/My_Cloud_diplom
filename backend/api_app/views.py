@@ -1,7 +1,12 @@
 import datetime
+import secrets
+import uuid
+from django.shortcuts import get_object_or_404
 import django.urls
 import mimetypes
 import os
+from django.utils import timezone
+from django.urls import reverse
 from django.conf import settings
 from django.contrib.auth.hashers import make_password
 from django.http import FileResponse, Http404, HttpResponse, StreamingHttpResponse
@@ -79,7 +84,7 @@ class UserView(APIView):
             user = User.objects.get(id_user=id)
         except User.DoesNotExist:
             return Response({"Детали": "Пользователь не найден."}, status=status.HTTP_404_NOT_FOUND)
-
+        
         if "role" in request.data:
             user.role = request.data["role"]
             user.save()
@@ -88,7 +93,10 @@ class UserView(APIView):
 
         return Response({"Детали": "Неправильное поле для обновления."}, status=status.HTTP_400_BAD_REQUEST)
 
+from rest_framework.permissions import IsAuthenticated
+
 class StorageView(APIView):
+    # permission_classes = [IsAuthenticated]  # Убедитесь, что пользователь аутентифицирован
     # Метод для обработки GET-запроса: получение списка всех файлов пользователя
     def get(self, request, id_user=None, id_file=None):
         if id_user and id_file:
@@ -227,10 +235,11 @@ class StorageView(APIView):
         # return response
 
     # Метод для обработки POST-запроса: загрузка нового файла
-    def post(self, request, id_user, id_file=None):
-        if 'file' not in request.data:
-            pass
-
+    def post(self, request, id_user=None, id_file=None):
+        print(f'ID User: {id_user}, ID File: {id_file}, User: {request.user}')  # Для отладки
+        if id_file and id_user:
+            # Новый метод для генерации ссылки
+            return self.generate_file_link(request, id_file)
         else:
             # загрузка файла
             return self.upload_file(request, id_user)
@@ -303,3 +312,44 @@ class StorageView(APIView):
             return Response(status=status.HTTP_204_NO_CONTENT)
         except Storage.DoesNotExist:
             return Response({"Детали": "Файл не найден."}, status=status.HTTP_404_NOT_FOUND)
+        
+    
+    # ! _________________________________________________________________________________
+
+
+    def generate_file_link(self, request, id_file):
+        token = secrets.token_urlsafe(16)
+        file_link = f"http://localhost:8000/api/storage/downloads/{token}/{id_file}/"
+        return Response({"file_link": file_link}, status=status.HTTP_200_OK)
+        # return f"/api/storage/download/{token}/{id_file}/"
+
+    # # Метод для получения списка файлов
+    # # def get(self, request, id_user=None, id_file=None):
+    # #     if id_file:
+    # #         return self.download_file(request, id_file)
+    # #     elif id_user:
+    # #         queryset = Storage.objects.filter(id_user=id_user)
+    # #         serializer = StorageSerializer(queryset, many=True)
+    # #         return Response(serializer.data, status=status.HTTP_200_OK)
+    # #     return Response({"detail": "Приобретите файлы."}, status=status.HTTP_400_BAD_REQUEST)
+
+    # # # Метод для скачивания файла
+    # # def download_file(self, request, id_file):
+    # #     """Метод для скачивания файла по специальной ссылке."""
+    # #     try:
+    # #         storage = Storage.objects.get(id_file=id_file)
+    # #         if storage.file:
+    # #             with open(storage.file.path, 'rb') as f:
+    # #                 response = HttpResponse(f.read(), content_type="application/octet-stream")
+    # #                 response['Content-Disposition'] = f'attachment; filename="{storage.original_name}"'
+    # #                 return response
+    # #         else:
+    # #             raise Http404("Файл не найден.")
+    # #     except Storage.DoesNotExist:
+    # #         raise Http404("Файл не найден.")
+
+    # # Метод для генерации ссылки
+    # def post(self, request, id_file):
+    #     """Метод для генерации ссылки на файл."""
+    #     file_link = self.generate_file_link(id_file)
+    #     return Response({"file_link": file_link}, status=status.HTTP_200_OK)

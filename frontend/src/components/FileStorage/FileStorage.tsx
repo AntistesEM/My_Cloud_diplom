@@ -238,25 +238,53 @@ export const FileStorage: React.FC = () => {
     //         }, 3000);
     //     }
 
-        /**
-         * Обработчик копирования ссылки на файл. Копирует URL файла с указанным идентификатором в буфер обмена.
-         * 
-         * Функция формирует ссылку на файл, используя его идентификатор и идентификатор пользователя, 
-         * и затем записывает эту ссылку в буфер обмена с помощью API clipboard. 
-         * В случае успешного копирования выводится сообщение об успешном завершении. 
-         * Если возникает ошибка во время копирования, она логируется в консоль.
-         * 
-         * @param {string | undefined} userId - Идентификатор пользователя, связанный с файлом.
-         * @param {number} fileId - Идентификатор файла, для которого нужно скопировать ссылку.
-         */
-        const handleCopyLink = (userId: string | undefined, fileId: number) => {
-            // Формируем ссылку на файл, используя идентификатор пользователя и файл
-            const fileLink = `http://localhost:5000/api/storage/file/${userId}/${fileId}`;
-            // Копируем ссылку в буфер обмена
-            navigator.clipboard.writeText(fileLink)
-                .then(() => alert('Ссылка скопирована!')) // Сообщение об успешном копировании
-                .catch(err => console.error('Ошибка при копировании ссылки:', err)); // Логируем ошибку
-        };
+    // /**
+    //  * Обработчик копирования ссылки на файл. Копирует URL файла с указанным идентификатором в буфер обмена.
+    //  * 
+    //  * Функция формирует ссылку на файл, используя его идентификатор и идентификатор пользователя, 
+    //  * и затем записывает эту ссылку в буфер обмена с помощью API clipboard. 
+    //  * В случае успешного копирования выводится сообщение об успешном завершении. 
+    //  * Если возникает ошибка во время копирования, она логируется в консоль.
+    //  * 
+    //  * @param {string | undefined} userId - Идентификатор пользователя, связанный с файлом.
+    //  * @param {number} fileId - Идентификатор файла, для которого нужно скопировать ссылку.
+    //  */
+    // const handleCopyLink = (userId: string | undefined, fileId: number) => {
+    //     // Формируем ссылку на файл, используя идентификатор пользователя и файл
+    //     const fileLink = `http://localhost:5000/api/storage/file/${userId}/${fileId}`;
+    //     // Копируем ссылку в буфер обмена
+    //     navigator.clipboard.writeText(fileLink)
+    //         .then(() => alert('Ссылка скопирована!')) // Сообщение об успешном копировании
+    //         .catch(err => console.error('Ошибка при копировании ссылки:', err)); // Логируем ошибку
+    // };
+    
+    const handleLink = async (id_file: number) => {
+        setIsLoading(true); // Устанавливаем состояние загрузки в true
+        try {
+            const response = await fetch(`http://localhost:8000/api/storage/link/${id_user}/${id_file}/`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer ' + localStorage.getItem('access_token'), 
+                    'Content-Type': 'application/json'
+                }
+            });
+    
+            if (!response.ok) {
+                throw new Error("Ошибка сети");
+            }
+    
+            const data = await response.json();
+            console.log("Ссылка на файл: ", data.file_link);
+            alert("Ссылка на файл: " + data.file_link);
+        } catch (error) {
+            console.error("Ошибка получения ссылки:", error);
+        } finally {
+            setIsLoading(false);
+            setTimeout(() => {
+                setError('');
+            }, 3000);
+        }
+    };
 
         return (
             <div className="wrap">
@@ -312,7 +340,7 @@ export const FileStorage: React.FC = () => {
                                             Переименовать
                                         </button>
                                         <button onClick={() => handleDownload(file.id_file)} >Скачать</button>
-                                        <button onClick={() => handleCopyLink(id_user, file.id_file)}>Копировать ссылку</button>
+                                        <button onClick={() => handleLink(file.id_file)}>Копировать ссылку</button>
                                         <a href={`http://localhost:8000/api/storage/view/${id_user}/${file.id_file}/`} target="_blank" rel="noopener noreferrer">Просмотр</a>
                                     </td>
                                 </tr>

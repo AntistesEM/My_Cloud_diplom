@@ -7,5 +7,6 @@ urlpatterns = [
     path("storage/<int:id_user>/", StorageView.as_view(), name='files_list-add_file'),  # Для GET и POST
     path("storage/view/<int:id_user>/<int:id_file>/", StorageView.as_view(), name='files_view'),  # Для просмотра файла
     path("storage/download/<int:id_file>/", StorageView.as_view(), name='files_download'),  # Для просмотра файла
+    path("storage/link/<int:id_user>/<int:id_file>/", StorageView.as_view(), name='generate_file_link'),  # Для генерации ссылки
     path("storage/<int:id_user>/<int:id_file>/", StorageView.as_view(), name='delete_file'),  # Для удаления файла
 ]
