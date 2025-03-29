@@ -1,4 +1,5 @@
 import './App.css';
+import API_BASE_URL from './config';
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import { useEffect, useState } from 'react';
 import { LoginForm } from './components/LoginForm';
@@ -7,6 +8,7 @@ import { AdminPanel } from './components/AdminPanel';
 import { FileStorage } from './components/FileStorage';
 import { Navbar } from './components/Navbar';
 import { ProtectedRoute } from './components/ProtectedRoute';
+
 
 /**
  * Компонент App
@@ -31,37 +33,46 @@ import { ProtectedRoute } from './components/ProtectedRoute';
  * @returns {JSX.Element} - Возвращает JSX, представляющий главный интерфейс приложения с навигацией и маршрутами.
  */
 const App = () => {
-    const [isAuthenticated, setIsAuthenticated] = useState<boolean>(!!localStorage.getItem('access_token')); // Устанавливаем статус аутентификации
-    const [role, setRole] = useState<string>(localStorage.getItem('role') || ''); // Состояние для роли
-
+    const [role, setRole] = useState<string>(localStorage.getItem('role') || '');
+    
     // Функция выхода из системы
-    const handleLogout = () => {
-        localStorage.removeItem('access_token'); // Удаляем токен из localStorage
-        localStorage.removeItem('refresh_token'); // Удаляем токен из localStorage
-        localStorage.removeItem('role'); // Удаляем информацию о роли
-        setIsAuthenticated(false); // Устанавливаем статус аутентификации в false
-        setRole(''); // Обновляем состояние роли
+    const handleLogout = async () => {        
+
+        const response = await fetch(`${API_BASE_URL}/auth/token/logout/`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Token ${localStorage.getItem('token')}`,
+            },
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.detail || 'Не удалось выйти.');
+        }
+
+        localStorage.removeItem('token');
+        localStorage.removeItem('id_user');
+        localStorage.removeItem('role');
+        setRole('');
+        console.log('Вы успешно вышли.');
     };
     
-    // Обновляет состояние аутентификации и роли пользователя при изменении
-    const updateAuth = (authStatus: boolean, userRole: string) => {
-        setIsAuthenticated(authStatus); // Обновляем статус аутентификации в состоянии
-        setRole(userRole); // Устанавливаем новую роль пользователя
+    // Обновляет состояние роли пользователя при изменении
+    const updateRole = (userRole: string) => {
+        setRole(userRole);
     };
 
-    // проверяем наличие токена и роли при загрузке приложения (один раз при монтировании)
+    // проверяем наличие роли при загрузке приложения (один раз при монтировании)
     useEffect(() => {
-        const token = localStorage.getItem('access_token'); // Проверяем наличие токена
-        const storedRole = localStorage.getItem('role'); // Проверяем наличие роли
-        setIsAuthenticated(!!token); // Обновляем статус аутентификации
+        const storedRole = localStorage.getItem('role');
         if (storedRole) {
-            setRole(storedRole); // Устанавливаем роль
+            setRole(storedRole);
         }
     }, []);
 
     return (
         <Router>
-            <Navbar onLogout={handleLogout} isAuthenticated={isAuthenticated} role={role} />
+            <Navbar onLogout={handleLogout} role={role} />
             <Routes>
                 <Route path="/" element={
                     <div className="wrap">
@@ -70,15 +81,15 @@ const App = () => {
                         <p>Выберите действие для продолжения</p>
                     </div>
                 } />
-                <Route path="/signin" element={<LoginForm updateAuth={updateAuth} />} />
+                <Route path="/signin" element={<LoginForm updateRole={updateRole} />} />
                 <Route path="/signup" element={<RegistrationForm />} />
                 <Route path="/storage/:id_user" element={
-                    <ProtectedRoute> {/* Защищенный маршрут для файлового хранилища */}
+                    <ProtectedRoute >
                         <FileStorage />
                     </ProtectedRoute>
                 } />
                 <Route path="/admin" element={
-                    <ProtectedRoute> {/* Защищенный маршрут для файлового хранилища */}
+                    <ProtectedRoute requireAdmin={true}>
                         <AdminPanel />
                     </ProtectedRoute>
                 } />

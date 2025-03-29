@@ -1,4 +1,5 @@
 import "./RegistrationForm.css";
+import API_BASE_URL from '../../config';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -6,7 +7,7 @@ export const RegistrationForm: React.FC = () => {
     const [username, setUsername] = useState<string>('');
     const [fullname, setFullName] = useState<string>('');
     const [email, setEmail] = useState<string>('');
-    const [password_hash, setPassword] = useState<string>('');
+    const [password, setPassword] = useState<string>('');
     const [error, setError] = useState<string>('');
     const [success, setSuccess] = useState<string>('');
     const navigate = useNavigate();
@@ -36,7 +37,7 @@ export const RegistrationForm: React.FC = () => {
             return false;
         }        
         const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{6,}$/;
-        if (!passwordRegex.test(password_hash)) {
+        if (!passwordRegex.test(password)) {
             setError('Пароль должен содержать минимум 6 символов, одну заглавную букву, одну цифру и один специальный символ.');
             return false;
         }
@@ -73,12 +74,12 @@ export const RegistrationForm: React.FC = () => {
             return;
         }
         try {
-            const response = await fetch('http://localhost:8000/api/users/', {  
+            const response = await fetch(`${API_BASE_URL}/api/users/`, {  
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ email, username, fullname, password_hash }),
+                body: JSON.stringify({ email, username, fullname, password }),
             });
             if (!response.ok) {
                 const errorData = await response.json();
@@ -142,7 +143,7 @@ export const RegistrationForm: React.FC = () => {
                         Пароль:
                         <input
                             type="password"
-                            value={password_hash}
+                            value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             required
                         />

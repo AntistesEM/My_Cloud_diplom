@@ -12,6 +12,8 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 
 import os
 from pathlib import Path
+from decouple import config
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -41,8 +43,12 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     'api_app',
+
     'rest_framework',
-    'rest_framework_simplejwt',
+
+    'rest_framework.authtoken',
+    'djoser',
+
     'corsheaders',
 ]
 
@@ -62,11 +68,19 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.AllowAny',
     ],
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'rest_framework.authentication.TokenAuthentication',
+        'rest_framework.authentication.BasicAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
     ),
 }
 
 CORS_ORIGIN_ALLOW_ALL = True
+
+CORS_EXPOSE_HEADERS = [
+    'X-Filename',  # Позволяет клиенту видеть этот заголовок
+    'Content-Disposition',
+    'Content-Type',
+]
 
 ROOT_URLCONF = 'backend_project.urls'
 
@@ -95,11 +109,11 @@ WSGI_APPLICATION = 'backend_project.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'My_cloud_DB',
-        'USER': 'postgres',
-        'PASSWORD': 'Kapitan3297PGSQL',
-        'HOST': '127.0.0.1',
-        'PORT': '5432',
+        'NAME': config('DATABASE_NAME'),
+        'USER': config('DATABASE_USER'),
+        'PASSWORD': config('DATABASE_PASSWORD'),
+        'HOST': config('DATABASE_HOST'),
+        'PORT': config('DATABASE_PORT'),
     }
 }
 
@@ -145,8 +159,4 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# AUTH_USER_MODEL = 'api_app.User'
-
-SIMPLE_JWT = {
-    'USER_ID_FIELD': 'id_user',  # Укажите ваше поле идентификатора
-}
+AUTH_USER_MODEL = 'api_app.User'

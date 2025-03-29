@@ -1,28 +1,75 @@
-import { Navigate } from "react-router-dom";
+import React, { useEffect, useState } from 'react';
+import { Navigate } from 'react-router-dom';
+import API_BASE_URL from '../../config';
 
 /**
  * Компонент ProtectedRoute обеспечивает защиту маршрутов для аутентифицированных пользователей.
- * 
+ *
  * @param {Object} props - Свойства компонента.
  * @param {React.ReactNode} props.children - Дочерние компоненты, которые будут рендериться, если доступ разрешен.
  * @param {boolean} [props.requireAdmin=false] - Опциональный параметр, указывающий, требуется ли роль администратора для доступа к маршруту.
- * 
+ *
  * Если токен отсутствует, пользователя перенаправляют на страницу входа.
  * Если требуется роль администратора и текущая роль пользователя не является администратором, происходит перенаправление на страницу "/storage".
- * 
+ *
  * @returns {JSX.Element} - Возвращает дочерние компоненты или выполняет перенаправление.
  */
-export const ProtectedRoute: React.FC<{ children: React.ReactNode, requireAdmin?: boolean }> = ({ children, requireAdmin }) => { 
-    const token = localStorage.getItem('access_token'); 
-    const role = localStorage.getItem('role');
-
-    if (!token) {
-        return <Navigate to="/signin" />;
-    }
+export const ProtectedRoute: React.FC<{
+    children: React.ReactNode;
+    requireAdmin?: boolean;
+}> = ({ children, requireAdmin }) => {
+    const [loading, setLoading] = useState(true);
+    const [redirectPath, setRedirectPath] = useState<string | null>(null);
+    const token = localStorage.getItem('token');
     
-    if (requireAdmin && role !== 'admin') {
-        return <Navigate to="/storage" />;
+    useEffect(() => {
+        const roleUser = async () => {
+            if (!token) {
+                setRedirectPath("/signin"); // Если нет токена, перенаправляем на страницу входа
+                setLoading(false);
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/users/user_info/`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Token ${token}`,
+                    },
+                });
+
+                if (!response.ok) {
+                    throw new Error('Ошибка при загрузке');
+                }
+
+                const userInfo = await response.json();
+
+                // Проверка требуемой роли
+                if (requireAdmin && userInfo.role !== 'admin') {
+                    setRedirectPath(`/storage/${userInfo.id_user}`);
+                } else {
+                    setRedirectPath(null); // Пользователь имеет доступ, продолжаем
+                }
+            } catch (error) {
+                console.error(error);
+                setRedirectPath("/signin"); // В случае ошибки перенаправляем на страницу входа
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        roleUser();
+    }, [requireAdmin, token]);
+
+    if (loading) {
+        return <div>Загрузка...</div>;
     }
 
+    // Если нужно перенаправление, отображаем Navigate
+    if (redirectPath) {
+        return <Navigate to={redirectPath} />;
+    }
+
+    // Если все прошло успешно
     return <>{children}</>;
 };

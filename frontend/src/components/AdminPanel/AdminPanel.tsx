@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+import API_BASE_URL from '../../config';
 import './AdminPanel.css';
 
 // Определение типа пользователя
@@ -26,18 +27,15 @@ interface File {
  * 
  * return (<AdminPanel />)
  */
-export const AdminPanel: React.FC = () => {
-    // Используем состояние для хранения списка пользователей.
-    const [users, setUsers] = useState<User[]>([]);
-    // const { id_user } = useParams<{ id_user: string }>(); // Получаем ID пользователя из URL
-
-    // Хук для навигации между страницами.
-    const navigate = useNavigate();
+export const AdminPanel: React.FC = () => {    
+    const [users, setUsers] = useState<User[]>([]);  // Используем состояние для хранения списка пользователей
+    const auth_token = localStorage.getItem('token');
+    const navigate = useNavigate();  // Хук для навигации между страницами
     
-    // Функция для загрузки пользователей с сервера.
+    // Функция для загрузки пользователей с сервера
     const fetchUsers = async () => {
         try {
-            const response = await fetch('http://localhost:8000/api/users');
+            const response = await fetch(`${API_BASE_URL}/api/users`);
 
             if (!response.ok) {
                 throw new Error('Ошибка при загрузке пользователей');
@@ -51,12 +49,11 @@ export const AdminPanel: React.FC = () => {
                 if (a.role === 'admin' && b.role !== 'admin') return -1; 
                 if (a.role !== 'admin' && b.role === 'admin') return 1;
 
-                // Если роли одинаковые, сортируем по fullname
+                // Если роли одинаковые, сортируем по username
                 return a.username.localeCompare(b.username);
             });
-
-            // Устанавливаем полученный список пользователей в состояние.
-            setUsers(sortedUsers);
+            
+            setUsers(sortedUsers);  // Устанавливаем полученный список пользователей в состояние
         } catch (error) {
             console.error(error);
         }
@@ -73,8 +70,11 @@ export const AdminPanel: React.FC = () => {
      */
     const handleDeleteUser = async (id_user: number) => {
         try {
-            const response = await fetch(`http://localhost:8000/api/users/${id_user}/`, {
+            const response = await fetch(`${API_BASE_URL}/api/users/${id_user}/`, {
                 method: 'DELETE',
+                headers: {
+                    'Authorization': `Token ${auth_token}`,
+                },
             });
 
             if (!response.ok) {
@@ -89,18 +89,18 @@ export const AdminPanel: React.FC = () => {
         }
     };
 
-
     /**
-     * toggleAdmin - функция для изменения роли пользователя (на админа или обратно).
+     * toggleAdmin - функция для изменения роли пользователя (admin или user).
      * @param {number} id_user - ID пользователя, роль которого нужно изменить.
      * @param {string} newRole - новая роль для пользователя (например, "user" или "admin").
      */
     const toggleAdmin = async (id_user: number, newRole: string) => {
         try {
-            const response = await fetch(`http://localhost:8000/api/users/${id_user}/`, {
+            const response = await fetch(`${API_BASE_URL}/api/users/${id_user}/`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Authorization': `Token ${auth_token}`,
                 },
                 body: JSON.stringify({ role: newRole }),
             });
@@ -133,7 +133,7 @@ export const AdminPanel: React.FC = () => {
                     return (
                         <li key={user.id_user} className="admin-panel__item">
                             {Object.entries(user).map(([key, value]) => (
-                                (key !== 'password_hash' && key !== 'id_user') && (
+                                (key !== 'password' && key !== 'id_user') && (
                                     (key !== 'storages') ? (
                                         <div key={key}>
                                             <strong>{key}:</strong> {value}

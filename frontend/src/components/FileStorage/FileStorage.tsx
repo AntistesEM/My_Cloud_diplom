@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import API_BASE_URL from '../../config';
 import './FileStorage.css';
 
 interface FileItem {
@@ -18,6 +19,7 @@ export const FileStorage: React.FC = () => {
     const [selectedFile, setSelectedFile] = useState<File | null>(null);  // Состояние для хранения выбранного файла для загрузки
     const [comment, setComment] = useState<string>('');  // Состояние для хранения комментария к загружаемому файлу
     const [isLoading, setIsLoading] = useState<boolean>(false);  // Состояние для отслеживания состояния загрузки
+    const auth_token = localStorage.getItem('token');
     
     /**
      * Хук, который загружает файлы из API при монтировании компонента.
@@ -26,7 +28,12 @@ export const FileStorage: React.FC = () => {
         const fetchFiles = async () => {
             setIsLoading(true);
             try {
-                const response = await fetch(`http://localhost:8000/api/storage/${id_user}`);
+                const response = await fetch(`${API_BASE_URL}/api/storage/${id_user}`, {
+                    headers: {
+                        'Authorization': `Token ${auth_token}`,
+                    },
+                });
+                
                 if (!response.ok) {
                     throw new Error('Не удалось загрузить файлы');
                 }
@@ -47,7 +54,7 @@ export const FileStorage: React.FC = () => {
             }
         };
         fetchFiles();
-    }, [id_user]);
+    }, [auth_token, id_user]);
     
     /**
      * Обработчик загрузки файла. Загружает выбранный файл и комментарий на сервер.
@@ -76,23 +83,26 @@ export const FileStorage: React.FC = () => {
 
         setIsLoading(true); // Устанавливаем состояние загрузки в true
         try {
-            const response = await fetch(`http://localhost:8000/api/storage/${id_user}/`, {
+            const response = await fetch(`${API_BASE_URL}/api/storage/${id_user}/`, {
                 method: 'POST',
+                headers: {
+                    'Authorization': `Token ${auth_token}`,
+                },
                 body: formData,
             });
             if (!response.ok) {
                 throw new Error('Не удалось загрузить файл');
             }
             const newFiles = await response.json(); // Получаем новый список файлов после загрузки
-            setFiles(newFiles); // Обновляем состояние файлов
-            setComment(''); // Сбрасываем поле комментария
-            setSelectedFile(null); // Сбрасываем выбранный файл
+            setFiles(newFiles);
+            setComment('');
+            setSelectedFile(null);
         } catch (err: unknown) {
-            console.error(err); // Логируем ошибку
+            console.error(err);
             if (err instanceof Error) {
-                setError(err.message); // Устанавливаем сообщение об ошибке для отображения
+                setError(err.message);
             } else {
-                setError('Произошла ошибка при загрузке файла'); // Сообщение по умолчанию
+                setError('Произошла ошибка при загрузке файла');
             }
         } finally {
             setIsLoading(false);
@@ -115,8 +125,11 @@ export const FileStorage: React.FC = () => {
     const handleDelete = async (id_file: number) => {
         setIsLoading(true); // Устанавливаем состояние загрузки в true
         try {
-            const response = await fetch(`http://localhost:8000/api/storage/${id_user}/${id_file}/`, {
+            const response = await fetch(`${API_BASE_URL}/api/storage/${id_user}/${id_file}/`, {
                 method: 'DELETE',
+                headers: {
+                    'Authorization': `Token ${auth_token}`,
+                },
             });
             
             if (!response.ok) {
@@ -126,13 +139,13 @@ export const FileStorage: React.FC = () => {
             // Обновляем состояние файлов, исключая удаляемый файл
             const newFiles = files.filter(file => file.id_file !== id_file);
 
-            setFiles(newFiles); // Устанавливаем новое состояние файлов
+            setFiles(newFiles);
         } catch (err: unknown) {
-            console.error(err); // Логируем ошибку
+            console.error(err);
             if (err instanceof Error) {
-                setError(err.message); // Устанавливаем сообщение об ошибке для отображения пользователю
+                setError(err.message);
             } else {
-                setError('Произошла ошибка при удалении файла'); // Сообщение по умолчанию
+                setError('Произошла ошибка при удалении файла');
             }
         } finally {
             setIsLoading(false);
@@ -155,15 +168,16 @@ export const FileStorage: React.FC = () => {
      * @param {string} newName - Новое имя для файла.
      */
     const handleRename = async (id_file: number, newName: string) => {
-        setIsLoading(true); // Устанавливаем состояние загрузки в true
+        setIsLoading(true);
         try {
-            const response = await fetch(`http://localhost:8000/api/storage/${id_user}/${id_file}/`, {
+            const response = await fetch(`${API_BASE_URL}/api/storage/${id_user}/${id_file}/`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Authorization': `Token ${auth_token}`,
                 },
-                body: JSON.stringify({ name: newName }), // Отправляем новое имя файла в теле запроса
-            });// Проверяем статус ответа
+                body: JSON.stringify({ name: newName }),
+            });
 
             if (!response.ok) {
                 const errorData = await response.json(); // Получаем данные об ошибке
@@ -179,11 +193,11 @@ export const FileStorage: React.FC = () => {
             // Обновляем состояние файлов, заменяя старое имя на новое для конкретного файла
             setFiles(files.map(file => (file.id_file === id_file ? updatedFile : file)));
         } catch (err: unknown) {
-            console.error(err); // Логируем ошибку
+            console.error(err);
             if (err instanceof Error) {
-                setError(err.message); // Устанавливаем сообщение об ошибке для отображения пользователю
+                setError(err.message);
             } else {
-                setError('Произошла ошибка при переименовании файла'); // Сообщение по умолчанию
+                setError('Произошла ошибка при переименовании файла');
             }
         } finally {
             setIsLoading(false);
@@ -193,79 +207,56 @@ export const FileStorage: React.FC = () => {
         }
     };
 
-    const handleDownload = (id_file: number) => {
-        setIsLoading(true); // Устанавливаем состояние загрузки в true
+    // Обработчик скачивания файла
+    const handleDownload = async (id_file: number) => {
+        setIsLoading(true);
+        const token = localStorage.getItem('token');
         try {
-            // Переход к URL для скачивания файла
-            window.location.href = `http://localhost:8000/api/storage/download/${id_file}/`;
+            const response = await fetch(`${API_BASE_URL}/api/storage/download/${id_file}/`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Token ${token}`,
+                },
+            });    
+    
+            if (!response.ok) {
+                throw new Error('Ошибка при скачивании файла');
+            }
+            
+            const filename = response.headers.get('X-Filename');  // Получаем имя файла из заголовка ответа
+    
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+    
+            // Проверяем, есть ли имя файла, если нет, используем значение по умолчанию
+            a.download = filename ? decodeURIComponent(filename) : `file_${id_file}`;
+            
+            // Удаляем элемент 'a' после нажатия
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            
+            // Очищаем объект URL после скачивания
+            window.URL.revokeObjectURL(url); 
         } catch (err) {
-            console.error(err); // Логируем ошибку
-            setError('Произошла ошибка при скачивании файла'); // Сообщение по умолчанию
+            console.error(err);
+            setError('Произошла ошибка при скачивании файла');
         } finally {
-            setIsLoading(false); // Установка состояния загрузки в false
+            setIsLoading(false);
         }
     };
     
-
-    
-    // const handleDownload = async (id_file: number) => {
-    //     try {
-    //         const response = await fetch(`http://localhost:8000/api/storage/${id_user}/${id_file}/download`, {
-    //             method: 'GET',
-    //         });
-
-    //         if (!response.ok) {
-    //             throw new Error('Не удалось загрузить файл');
-    //         }
-
-    //         const blob = await response.blob();
-    //         const url = window.URL.createObjectURL(blob);
-    //         const link = document.createElement('a');
-    //         link.href = url;
-    //         link.download = files.find(file => file.id_file === id_file)?.name || '';
-    //         link.click();
-    //     } catch (err: unknown) {
-    //         console.error(err); // Логируем ошибку
-    //         if (err instanceof Error) {
-    //             setError(err.message); // Устанавливаем сообщение об ошибке для отображения пользователю
-    //         } else {
-    //             setError('Произошла ошибка при загрузке файла'); // Сообщение по умолчанию
-    //         }
-    //     } finally {
-    //         setIsLoading(false);
-    //         setTimeout(() => {
-    //             setError('');
-    //         }, 3000);
-    //     }
-
-    // /**
-    //  * Обработчик копирования ссылки на файл. Копирует URL файла с указанным идентификатором в буфер обмена.
-    //  * 
-    //  * Функция формирует ссылку на файл, используя его идентификатор и идентификатор пользователя, 
-    //  * и затем записывает эту ссылку в буфер обмена с помощью API clipboard. 
-    //  * В случае успешного копирования выводится сообщение об успешном завершении. 
-    //  * Если возникает ошибка во время копирования, она логируется в консоль.
-    //  * 
-    //  * @param {string | undefined} userId - Идентификатор пользователя, связанный с файлом.
-    //  * @param {number} fileId - Идентификатор файла, для которого нужно скопировать ссылку.
-    //  */
-    // const handleCopyLink = (userId: string | undefined, fileId: number) => {
-    //     // Формируем ссылку на файл, используя идентификатор пользователя и файл
-    //     const fileLink = `http://localhost:5000/api/storage/file/${userId}/${fileId}`;
-    //     // Копируем ссылку в буфер обмена
-    //     navigator.clipboard.writeText(fileLink)
-    //         .then(() => alert('Ссылка скопирована!')) // Сообщение об успешном копировании
-    //         .catch(err => console.error('Ошибка при копировании ссылки:', err)); // Логируем ошибку
-    // };
-    
+    // Обработчик генерации ссылки
     const handleLink = async (id_file: number) => {
-        setIsLoading(true); // Устанавливаем состояние загрузки в true
+        setIsLoading(true);
         try {
-            const response = await fetch(`http://localhost:8000/api/storage/link/${id_user}/${id_file}/`, {
+            const response = await fetch(`${API_BASE_URL}/api/storage/link/${id_user}/${id_file}/`, {
                 method: 'POST',
                 headers: {
-                    'Authorization': 'Bearer ' + localStorage.getItem('access_token'), 
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Authorization': `Token ${auth_token}`,
                 }
             });
     
@@ -326,7 +317,6 @@ export const FileStorage: React.FC = () => {
                                     <td>
                                         {file.last_download_date ? new Date(file.last_download_date).toLocaleString() : 'Нет данных'}
                                     </td>
-                                    {/* <td>{new Date(file.last_download_date).toLocaleString()}</td> */}
                                     <td>
                                         <button onClick={() => handleDelete(file.id_file)}>Удалить</button>
                                         <button onClick={() => {
@@ -341,7 +331,7 @@ export const FileStorage: React.FC = () => {
                                         </button>
                                         <button onClick={() => handleDownload(file.id_file)} >Скачать</button>
                                         <button onClick={() => handleLink(file.id_file)}>Копировать ссылку</button>
-                                        <a href={`http://localhost:8000/api/storage/view/${id_user}/${file.id_file}/`} target="_blank" rel="noopener noreferrer">Просмотр</a>
+                                        <a href={`${API_BASE_URL}/api/storage/view/${id_user}/${file.id_file}/`} target="_blank" rel="noopener noreferrer">Просмотр</a>
                                     </td>
                                 </tr>
                             ))}

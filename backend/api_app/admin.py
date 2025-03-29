@@ -1,16 +1,21 @@
 from django.contrib import admin
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from .models import User, Storage
 
 # Настраиваем отображение модели User
-class UserAdmin(admin.ModelAdmin):
-    list_display = ('username', 'email', 'fullname', 'role')  # Поля для отображения в списке
-    search_fields = ('username', 'email')  # Поля для поиска
+class UserAdmin(BaseUserAdmin):
+    list_display = ('email', 'username', 'fullname', 'role', 'is_staff', 'is_active')
+    list_filter = ('is_staff', 'is_active')
+    search_fields = ('email', 'username')
+    ordering = ('email',)
+    filter_horizontal = ()
+    fieldsets = ()
 
 # Настраиваем отображение модели Storage
 class StorageAdmin(admin.ModelAdmin):
-    list_display = ('original_name', 'id_user', 'size', 'upload_date')  # Поля для отображения в списке
-    list_filter = ('id_user', 'upload_date')  # Фильтры для интерфейса
-    search_fields = ('original_name', 'id_user__username')  # Поля для поиска
+    list_display = ('original_name', 'id_user', 'size', 'upload_date')
+    list_filter = ('id_user', 'upload_date')
+    search_fields = ('original_name', 'id_user__username')
 
 # Регистрируем модели
 admin.site.register(User, UserAdmin)

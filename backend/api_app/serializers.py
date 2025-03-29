@@ -10,7 +10,17 @@ class UserSerializer(serializers.ModelSerializer):
     storages = StorageSerializer(many=True, read_only=True)  # связь с файлами
     class Meta:
         model = User
-        fields = "__all__"
+        fields = ["id_user", "username", "fullname", "email", "role", "storages", "password"]
         extra_kwargs = {
-            "password_hash": {"write_only": True}
+            "password": {"write_only": True},
         }
+
+    def create(self, validated_data):
+        user = User.objects.create_user(
+            email=validated_data['email'],
+            username=validated_data['username'],
+            password=validated_data['password'],
+            fullname=validated_data['fullname'],
+            role=validated_data.get('role', 'user')  # Установка роли по умолчанию
+        )
+        return user

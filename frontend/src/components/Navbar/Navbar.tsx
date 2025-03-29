@@ -23,7 +23,7 @@ import { Link, useLocation } from "react-router-dom";
  * - Вход ("/signin")
  * - Регистрация ("/signup")
  */
-export const Navbar = ({ onLogout, isAuthenticated, role }: { onLogout: () => void; isAuthenticated: boolean; role: string }) => {
+export const Navbar = ({ onLogout, role }: { onLogout: () => void; role: string }) => {
     const location = useLocation();
     
     return (
@@ -35,7 +35,7 @@ export const Navbar = ({ onLogout, isAuthenticated, role }: { onLogout: () => vo
                     </li>
                 ) : (
                     <>
-                        {(isAuthenticated && role === 'admin' && location.pathname.startsWith('/storage/')) ? (
+                        {(role === 'admin' && location.pathname.startsWith('/storage/')) ? (
                             <>                                
                                 <li className="nav-ul-li">
                                     <Link to='/admin'>Назад</Link>
@@ -44,7 +44,7 @@ export const Navbar = ({ onLogout, isAuthenticated, role }: { onLogout: () => vo
                                     <Link to="/">Выход</Link>
                                 </li>
                             </>
-                            ) : ((isAuthenticated && role !== 'admin' && location.pathname.startsWith('/storage/')) ? (
+                            ) : ((role !== 'admin' && location.pathname.startsWith('/storage/')) ? (
                                     <li className="nav-ul-li" onClick={onLogout}>
                                         <Link to="/">Выход</Link>
                                     </li>

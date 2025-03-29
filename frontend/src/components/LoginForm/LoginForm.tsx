@@ -1,11 +1,12 @@
 import "./LoginForm.css";
 
+import API_BASE_URL from '../../config';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-export const LoginForm: React.FC<{ updateAuth: (authStatus: boolean, role: string) => void }> = ({ updateAuth }) => {
-    const [username, setUsername] = useState<string>('');  // Состояние для хранения имени пользователя, вводимого в форму
-    const [password_hash, setPassword] = useState<string>('');  // Состояние для хранения пароля, вводимого в форму
+export const LoginForm: React.FC<{ updateRole: (role: string) => void }> = ({ updateRole }) => {
+    const [username, setUsername] = useState<string>('Test');  // Состояние для хранения имени пользователя, вводимого в форму
+    const [password, setPassword] = useState<string>('Kapitan3297!');  // Состояние для хранения пароля, вводимого в форму
     const [error, setError] = useState<string>('');  // Состояние для хранения сообщения об ошибке в случае неудачной аутентификации
     const navigate = useNavigate();  // Хук для навигации между страницами приложения в зависимости от роли пользователя
 
@@ -35,29 +36,44 @@ export const LoginForm: React.FC<{ updateAuth: (authStatus: boolean, role: strin
         e.preventDefault();
 
         try {
-            const response = await fetch('http://localhost:8000/api/users/', {
+            const response = await fetch(`${API_BASE_URL}/auth/token/login/`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ username, password_hash }),
+                body: JSON.stringify({ username, password }),
             });
-            // console.log(response.json());
             
             if (!response.ok) {
                 throw new Error('Некорректный логин или пароль');
             }
 
             const data = await response.json();
-            const { access, refresh, role, id_user } = data; // Достаем id, токен и роль
+            
+            const { auth_token } = data;
+            localStorage.setItem('token', auth_token);
+            
+            const response_user = await fetch(`${API_BASE_URL}/api/users/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Token ${auth_token}`,
+                },
+                body: JSON.stringify({ username }),
+            });
+            
+            if (!response_user.ok) {
+                const errorData = await response_user.json();
+                throw new Error(errorData.detail || 'Что-то пошло не так');
+            }
 
-            // Сохранение токена и роли в localStorage
-            localStorage.setItem('access_token', access);
-            localStorage.setItem('refresh_token', refresh);
+            const data_user = await response_user.json();
+
+            const { role, id_user } = data_user;
             localStorage.setItem('role', role);
             
-            // Обновляем аутентификацию
-            updateAuth(true, role); 
+            // Обновляем роль
+            updateRole(role);
             
             // Переход на соответствующую страницу в зависимости от роли
             if (role === 'admin') {
@@ -68,9 +84,9 @@ export const LoginForm: React.FC<{ updateAuth: (authStatus: boolean, role: strin
         } catch (err: unknown) {
             console.error(err);
             if (err instanceof Error) {
-                setError(err.message); // Устанавливаем сообщение об ошибке
+                setError(err.message);
             } else {
-                setError('Произошла ошибка'); // Сообщение по умолчанию, если это не ошибка
+                setError('Произошла ошибка');
             }
         }
     };
@@ -95,7 +111,7 @@ export const LoginForm: React.FC<{ updateAuth: (authStatus: boolean, role: strin
                         Пароль:
                         <input
                             type="password"
-                            value={password_hash}
+                            value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             required
                         />
