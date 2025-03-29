@@ -76,10 +76,12 @@ REST_FRAMEWORK = {
 
 CORS_ORIGIN_ALLOW_ALL = True
 
+# Позволяет клиенту видеть эти заголовоки
 CORS_EXPOSE_HEADERS = [
-    'X-Filename',  # Позволяет клиенту видеть этот заголовок
+    'X-Filename',  
     'Content-Disposition',
     'Content-Type',
+    'X-Last-Download-Date',
 ]
 
 ROOT_URLCONF = 'backend_project.urls'

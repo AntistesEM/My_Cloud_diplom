@@ -50,8 +50,10 @@ class Storage(models.Model):
     comment = models.CharField(max_length=128, null=False)
     size = models.BigIntegerField()
     upload_date = models.DateTimeField(auto_now_add=True, db_column="uploaddate")
-    last_download_date = models.DateTimeField(null=True, auto_now=True, blank=True, db_column="lastdownloaddate")
+    last_download_date = models.DateTimeField(null=True, auto_now=False, blank=True, db_column="lastdownloaddate")
     file = models.FileField(upload_to='uploads/')
+    token = models.CharField(max_length=32, null=True, blank=True)
+    token_expiration = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         db_table = "storage"

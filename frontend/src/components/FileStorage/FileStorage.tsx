@@ -222,15 +222,24 @@ export const FileStorage: React.FC = () => {
             if (!response.ok) {
                 throw new Error('Ошибка при скачивании файла');
             }
+
+            const update_last_download_date = response.headers.get('X-Last-Download-Date');  // Получаем дату последнего скачивания из заголовка ответа
             
-            const filename = response.headers.get('X-Filename');  // Получаем имя файла из заголовка ответа
-    
+            setFiles(
+                files.map(file => 
+                    file.id_file === id_file 
+                        ? { ...file, last_download_date: update_last_download_date ?? file.last_download_date } // Обновляем поле last_download_date
+                        : file
+                )
+            );
+
             const blob = await response.blob();
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
     
             // Проверяем, есть ли имя файла, если нет, используем значение по умолчанию
+            const filename = response.headers.get('X-Filename');
             a.download = filename ? decodeURIComponent(filename) : `file_${id_file}`;
             
             // Удаляем элемент 'a' после нажатия
@@ -249,33 +258,29 @@ export const FileStorage: React.FC = () => {
     };
     
     // Обработчик генерации ссылки
-    const handleLink = async (id_file: number) => {
-        setIsLoading(true);
+    const handleCopyLink = async (id_file: number) => {
         try {
             const response = await fetch(`${API_BASE_URL}/api/storage/link/${id_user}/${id_file}/`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Token ${auth_token}`,
-                }
+                    'Authorization': `Token ${auth_token}`, // аутентификация через токен
+                },
             });
-    
-            if (!response.ok) {
-                throw new Error("Ошибка сети");
-            }
-    
+
             const data = await response.json();
-            console.log("Ссылка на файл: ", data.file_link);
-            alert("Ссылка на файл: " + data.file_link);
+            if (response.ok) {
+                navigator.clipboard.writeText(data.link);
+                alert(`Ссылка ${data.link} скопирована в буфер обмена!`);
+            } else {
+                alert(data.detail || 'Ошибка при копировании ссылки');
+            }
         } catch (error) {
-            console.error("Ошибка получения ссылки:", error);
-        } finally {
-            setIsLoading(false);
-            setTimeout(() => {
-                setError('');
-            }, 3000);
+            console.error('Error:', error);
+            alert('Ошибка сети');
         }
     };
+
 
         return (
             <div className="wrap">
@@ -330,7 +335,7 @@ export const FileStorage: React.FC = () => {
                                             Переименовать
                                         </button>
                                         <button onClick={() => handleDownload(file.id_file)} >Скачать</button>
-                                        <button onClick={() => handleLink(file.id_file)}>Копировать ссылку</button>
+                                        <button onClick={() => handleCopyLink(file.id_file)}>Копировать ссылку</button>
                                         <a href={`${API_BASE_URL}/api/storage/view/${id_user}/${file.id_file}/`} target="_blank" rel="noopener noreferrer">Просмотр</a>
                                     </td>
                                 </tr>
