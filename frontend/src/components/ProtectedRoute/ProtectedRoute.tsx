@@ -5,14 +5,18 @@ import API_BASE_URL from '../../config';
 /**
  * Компонент ProtectedRoute обеспечивает защиту маршрутов для аутентифицированных пользователей.
  *
+ * Компонент проверяет наличие токена аутентификации и роль пользователя. 
+ * Если токен отсутствует, пользователя перенаправляют на страницу входа ("/signin").
+ * Если для доступа к маршруту требуется роль администратора (requireAdmin=true), 
+ * и текущая роль пользователя не является администратором, происходит перенаправление 
+ * на страницу "/storage/{id_user}", где {id_user} - это ID пользователя.
+ *
+ * Пропсы:
  * @param {Object} props - Свойства компонента.
  * @param {React.ReactNode} props.children - Дочерние компоненты, которые будут рендериться, если доступ разрешен.
  * @param {boolean} [props.requireAdmin=false] - Опциональный параметр, указывающий, требуется ли роль администратора для доступа к маршруту.
  *
- * Если токен отсутствует, пользователя перенаправляют на страницу входа.
- * Если требуется роль администратора и текущая роль пользователя не является администратором, происходит перенаправление на страницу "/storage".
- *
- * @returns {JSX.Element} - Возвращает дочерние компоненты или выполняет перенаправление.
+ * @returns {JSX.Element} - Возвращает дочерние компоненты, пока идет проверка, или выполняет перенаправление.
  */
 export const ProtectedRoute: React.FC<{
     children: React.ReactNode;
@@ -42,10 +46,10 @@ export const ProtectedRoute: React.FC<{
                     throw new Error('Ошибка при загрузке');
                 }
 
-                const userInfo = await response.json();
+                const userInfo = await response.json();                
 
                 // Проверка требуемой роли
-                if (requireAdmin && userInfo.role !== 'admin') {
+                if (requireAdmin && userInfo.role !== 'admin' && !userInfo.is_superuser) {
                     setRedirectPath(`/storage/${userInfo.id_user}`);
                 } else {
                     setRedirectPath(null); // Пользователь имеет доступ, продолжаем

@@ -20,20 +20,21 @@ import { ProtectedRoute } from './components/ProtectedRoute';
  * - Navbar: навигационная панель с ссылками на разные страницы приложения.
  * - Routes: определяет маршруты для следующих страниц:
  *   - Главная ("/"): отображает приветственное сообщение и краткое описание функционала приложения.
- *   - Вход ("/signin"): отображает форму для входа пользователя.
+ *   - Вход ("/signin"): отображает форму для входа пользователя и обновляет состояние при успешном входе.
  *   - Регистрация ("/signup"): отображает форму для регистрации нового пользователя.
- *   - Файловое хранилище ("/storage"): защищенный маршрут для доступа к файлам пользователя.
- *   - Панель администратора ("/admin"): защищенный маршрут для доступа к административной панели.
+ *   - Файловое хранилище ("/storage/:id_user"): защищенный маршрут для доступа к файлам пользователя, требует аутентификации.
+ *   - Панель администратора ("/admin"): защищенный маршрут для доступа к административной панели, доступен только суперпользователям.
  * 
  * Компонент также управляет состоянием аутентификации пользователя, используя
- * состояние `isAuthenticated`, которое обновляется при загрузке приложения и после выхода
- * пользователя из системы. Роль пользователя хранится в состоянии `role` и может 
- * использоваться для условной отрисовки компонентов.
+ * состояние `isSuperuser`, которое показывает, является ли пользователь суперпользователем.
+ * При загрузке приложения роль пользователя извлекается из `localStorage`, и состояние обновляется, 
+ * если ролей нет, устанавливается значение по умолчанию.
  * 
  * @returns {JSX.Element} - Возвращает JSX, представляющий главный интерфейс приложения с навигацией и маршрутами.
  */
 const App = () => {
-    const [role, setRole] = useState<string>(localStorage.getItem('role') || '');
+    const [role, setRole] = useState<string>(localStorage.getItem('role') ?? '');
+    const [isSuperuser, setIsSuperuser] = useState<boolean>(false);
     
     // Функция выхода из системы
     const handleLogout = async () => {        
@@ -54,12 +55,14 @@ const App = () => {
         localStorage.removeItem('id_user');
         localStorage.removeItem('role');
         setRole('');
+        setIsSuperuser(false);
         console.log('Вы успешно вышли.');
     };
     
     // Обновляет состояние роли пользователя при изменении
-    const updateRole = (userRole: string) => {
+    const updateRole = (userRole: string, is_superuser: boolean) => {
         setRole(userRole);
+        setIsSuperuser(is_superuser);
     };
 
     // проверяем наличие роли при загрузке приложения (один раз при монтировании)
@@ -72,7 +75,7 @@ const App = () => {
 
     return (
         <Router>
-            <Navbar onLogout={handleLogout} role={role} />
+            <Navbar onLogout={handleLogout} role={role} is_superuser={isSuperuser} />
             <Routes>
                 <Route path="/" element={
                     <div className="wrap">
