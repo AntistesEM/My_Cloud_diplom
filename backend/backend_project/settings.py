@@ -24,12 +24,13 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-1fs+ztgv#!8ujuq!8v0*bjw)9*20+n&eghs9e$$fl)(q0m+#%d'
+SECRET_KEY = config('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = config('DEBUG', default=False, cast=bool)
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default=[]).split(',')
+ALLOWED_HOSTS = [host.strip() for host in ALLOWED_HOSTS if host]
 
 
 # Application definition
