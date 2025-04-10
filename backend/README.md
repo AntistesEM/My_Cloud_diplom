@@ -52,11 +52,11 @@
       ALLOWED_HOSTS= #например через запятую: localhost,127.0.0.1,<ИМЯ ДОМЕНА ИЛИ IP АДРЕС СЕРВЕРА>
 
       # Настройки базы данных
-      DB_HOST=localhost
-      DB_PORT=5432
-      DB_NAME=your_db
-      DB_USER=user
-      DB_PASSWORD=password
+      DATABASE_HOST=localhost
+      DATABASE_PORT=5432
+      DATABASE_NAME=your_db
+      DATABASE_USER=user
+      DATABASE_PASSWORD=password
       ```
 
 7. Создаём базу данных:
