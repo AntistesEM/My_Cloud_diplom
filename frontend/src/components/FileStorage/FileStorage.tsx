@@ -271,6 +271,25 @@ export const FileStorage: React.FC = () => {
             setIsLoading(false);
         }
     };
+
+    /**
+     * Копирует текст в буфер обмена, используя временный элемент textarea.
+     * 
+     * Эта функция создает временный элемент textarea, помещает в него
+     * текст, который необходимо скопировать, выделяет его и выполняет
+     * команду копирования. После копирования временный элемент удаляется из DOM.
+     * 
+     * @param {string} text - Текст, который нужно скопировать.
+     * @returns {void} - Не возвращает никаких значений.
+     */
+    const fallbackCopyTextToClipboard = (text: string): void => {
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+    };
     
     /**
      * Обработчик генерации и копирования ссылки для скачивания файла.
@@ -280,6 +299,12 @@ export const FileStorage: React.FC = () => {
      * ссылка копируется в буфер обмена и выводится сообщение об успешном
      * копировании пользователю. В случае ошибки при выполнении запроса
      * выводится соответствующее сообщение об ошибке.
+     * 
+     * navigator.clipboard обычно доступен только на страницах, загруженных по HTTPS,
+     * или на localhost (при разработке). Если сайт развернут по HTTP, необходимо 
+     * развернуть его через HTTPS, чтобы использовать Clipboard API. Например, можно
+     * использовать такие решения, как [Let's Encrypt](https://letsencrypt.org/), 
+     * чтобы получить бесплатный SSL-сертификат.
      * 
      * @param {number} id_file - Идентификатор файла, для которого нужно 
      *                            сгенерировать ссылку.
@@ -297,14 +322,20 @@ export const FileStorage: React.FC = () => {
 
             const data = await response.json();
             if (response.ok) {
-                navigator.clipboard.writeText(data.link);
-                alert(`Ссылка ${data.link} скопирована в буфер обмена!`);
+                try {
+                    await navigator.clipboard.writeText(data.link);
+                    alert(`Ссылка ${data.link} скопирована в буфер обмена!`);
+                } catch {
+                    // Если копирование через Clipboard API не удалось, используем fallback
+                    fallbackCopyTextToClipboard(data.link);
+                    alert('Ссылка скопирована в буфер обмена через fallback!');
+                }
             } else {
                 alert(data.detail || 'Ошибка при копировании ссылки');
             }
         } catch (error) {
             console.error('Error:', error);
-            alert('Ошибка сети');
+            alert(`Ошибка сети ${error}`);
         }
     };
 
