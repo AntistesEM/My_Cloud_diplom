@@ -7,7 +7,7 @@
 📁 `backend/` – корневая папка бэкенда  
 &nbsp;&nbsp;&nbsp;&nbsp;📁 **`api_app/`** – приложение  
 &nbsp;&nbsp;&nbsp;&nbsp;📁 **`backend_project/`** – основная конфигурация Django  
-&nbsp;&nbsp;&nbsp;&nbsp;📁 **`media/`** – папка для загруженных пользователями файлов   
+&nbsp;&nbsp;&nbsp;&nbsp;📁 **`media/`** – папка для загруженных пользователями файлов  
 
 📄 `manage.py` – точка входа для управления Django-проектом  
 📄 `requirements.txt` – список зависимостей Python  
